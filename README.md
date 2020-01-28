@@ -1,5 +1,7 @@
 # Credit Risk Lecture
 
+new line
+
 This course aims to provide a comprehensive framework to understand modern credit applications. To achieve this goal, students must get familiarized with state-of-the-art technologies in the field of data engineering, statistical modeling, finance, and machine learning. 
 
 We embrace the open-source philosophy, and so this course contents and the software/datasets used are open to the public under a permissive license.
