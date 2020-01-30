@@ -4,8 +4,8 @@
 
 Assuming you are on the `master` branch of a local repository, create a new branch named `bugfix` from an existing branch called `feature-1`
 
-* `cmd-1`
-* `cmd-2`
+* `git checkout feature-1`
+* `git checkout -b bugfix`
 
 ## A - Cloning
 
