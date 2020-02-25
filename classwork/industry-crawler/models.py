@@ -58,7 +58,36 @@ class MajorGroup(AbstractIndustry):
 
     @staticmethod
     def from_dict(**kwargs):
-        pass
+        return MajorGroup(
+            title=kwargs["title"],
+            children=[
+                Group.from_dict(**k)
+                for k in kwargs.get("children", [])
+            ]
+        )
+
+    @staticmethod
+    def from_url(url):
+        response = requests.get(url)
+        html = BeautifulSoup(response.text, "html.parser")
+        return MajorGroup(
+            title=[elm.text for elm in html.find_all("h2") if elm.text.lower().startswith("major group")][0],
+            children=[
+                Group(
+                    title=group.text,
+                    children=[
+                        Single(
+                            title=inner.parent.text,
+                            children=[]
+                        )
+                        for inner in html.find_all("a")
+                        if inner.attrs.get("href").startswith("sic_manual.display")
+                        and inner.parent.text.startswith(group.text.split(":")[0].split(" ")[-1])
+                    ]
+                )
+                for group in html.find_all("strong") if group.text.lower().startswith("industry group")
+            ]
+        )
 
 
 class Group(AbstractIndustry):
@@ -66,7 +95,13 @@ class Group(AbstractIndustry):
 
     @staticmethod
     def from_dict(**kwargs):
-        pass
+        return Group(
+            title=kwargs["title"],
+            children=[
+                Single.from_dict(**k)
+                for k in kwargs.get("children", [])
+            ]
+        )
 
 
 class Single(AbstractIndustry):
@@ -74,7 +109,10 @@ class Single(AbstractIndustry):
 
     @staticmethod
     def from_dict(**kwargs):
-        pass
+        return Single(
+            title=kwargs["title"],
+            children=[]
+        )
 
 
 class SIC(AbstractIndustry):
@@ -82,4 +120,39 @@ class SIC(AbstractIndustry):
 
     @staticmethod
     def from_dict(**kwargs):
-        pass
+        return SIC(
+            title=kwargs["title"],
+            children=[
+                Division.from_dict(**k)
+                for k in kwargs.get("children", [])
+            ]
+        )
+
+    @staticmethod
+    def load(filename):
+        with open(filename, "r") as file:
+            data = json.loads(file.read())
+        return SIC.from_dict(**data)
+
+    def save(self, filename):
+        with open(filename, "w") as file:
+            data = self.jsonify()
+            file.write(data)
+
+    @staticmethod
+    def from_url(url):
+        response = requests.get(url)
+        html = BeautifulSoup(response.text, 'html.parser')
+        divisions = []
+        for element in html.find_all("a"):
+            href = element.attrs.get("href", "")
+            title = element.attrs.get("title", "")
+            if not href.startswith("sic_manual"):
+                continue
+            elif href.endswith("division"):
+                divisions.append(Division(title=title, children=[]))
+            elif href.endswith("group"):
+                major_group_url = url.replace("sic_manual.html", href)
+                divisions[-1].add_child(MajorGroup.from_url(major_group_url))
+        return SIC(title="SIC", children=divisions)
+
